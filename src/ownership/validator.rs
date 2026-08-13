@@ -65,6 +65,7 @@ impl Validator {
 
         errors.append(&mut self.invalid_team_annotation(&team_names));
         errors.append(&mut self.invalid_package_ownership(&team_names));
+        errors.append(&mut self.invalid_directory_ownership(&team_names));
 
         errors
     }
@@ -103,6 +104,20 @@ impl Validator {
                 } else {
                     None
                 }
+            })
+            .collect()
+    }
+
+    /// `DirectoryMapper::entries` skips unresolvable owners, so the directory silently
+    /// inherits its ancestor's owner and nothing else reports the bad name.
+    fn invalid_directory_ownership(&self, team_names: &HashSet<&TeamName>) -> Vec<Error> {
+        self.project
+            .directory_codeowner_files
+            .iter()
+            .filter(|directory_codeowner_file| !team_names.contains(&directory_codeowner_file.owner))
+            .map(|directory_codeowner_file| Error::InvalidTeam {
+                name: directory_codeowner_file.owner.clone(),
+                path: self.project.relative_path(&directory_codeowner_file.path).to_owned(),
             })
             .collect()
     }
