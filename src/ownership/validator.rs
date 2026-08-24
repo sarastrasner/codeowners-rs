@@ -275,7 +275,13 @@ impl Error {
             Error::CodeownershipFileIsStale { .. } => vec![],
             Error::InvalidTeam { name, path } => vec![format!("- {} is referencing an invalid team - '{}'", path.to_string_lossy(), name)],
             Error::InvalidDirectoryTeam { name, path, inherits_from } => {
-                let mut message = format!("- {} is referencing an invalid team - '{}'", path.to_string_lossy(), name);
+                // `owner` is `content.trim()`, so an empty or whitespace-only file yields "".
+                // Reporting that as `an invalid team - ''` gives no hint the file is empty.
+                let mut message = if name.is_empty() {
+                    format!("- {} is empty and names no team", path.to_string_lossy())
+                } else {
+                    format!("- {} is referencing an invalid team - '{}'", path.to_string_lossy(), name)
+                };
                 if let Some(inherits_from) = inherits_from {
                     message.push_str(&format!(
                         "; this directory is currently inheriting its owner from {}",
